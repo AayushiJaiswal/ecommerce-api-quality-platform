@@ -6,9 +6,13 @@ from app.api.products import router as products_router
 from app.api.auth import router as auth_router
 from app.core.security import get_current_user
 from app.models.user import User
+from app.api.cart import router as cart_router
+
+
 app = FastAPI()
 app.include_router(products_router)
 app.include_router(auth_router)
+app.include_router(cart_router)
 
 @app.get("/health")
 def health_check():
