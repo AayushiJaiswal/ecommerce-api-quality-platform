@@ -3,6 +3,8 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models.product import Product
 from app.schemas.product import ProductCreate, ProductOut
+from app.core.security import get_current_user
+from app.models.user import User
 
 router = APIRouter(prefix="/products", tags=["Products"])
 
@@ -52,3 +54,10 @@ def delete_product(product_id: int, db: Session = Depends(get_db)):
 @router.get("/", response_model=list[ProductOut])
 def list_products(db: Session = Depends(get_db)):
     return db.query(Product).filter(Product.is_active == True).all()
+  
+@router.get("/admin/inventory", response_model=list[ProductOut])
+def inventory_report(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+    return db.query(Product).filter(Product.is_active == True).order_by(Product.stock.asc()).all()
