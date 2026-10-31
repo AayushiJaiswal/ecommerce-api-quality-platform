@@ -1,0 +1,5 @@
+name,price_paise,stock,expected_status
+Bluetooth Speaker,129900,15,201
+Gaming Keyboard,349900,8,201
+Free Sample Item,0,10,422
+Overstocked Widget,9900,-5,422
