@@ -45,9 +45,17 @@ pipeline {
         }
     }
 
-    post {
+            post {
         always {
             sh 'docker-compose -f docker/docker-compose.yml down'
+            publishHTML(target: [
+                allowMissing: true,
+                alwaysLinkToLastBuild: true,
+                keepAll: true,
+                reportDir: 'reports',
+                reportFiles: 'newman-report.html',
+                reportName: 'Newman Test Report'
+            ])
         }
     }
 }
