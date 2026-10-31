@@ -18,7 +18,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 201\", function () {\r\n    pm.response.to.have.status(201);\r\n});\r\n\r\npm.test(\"Response contains correct email\", function () {\r\n    const jsonData = pm.response.json();\r\n    pm.expect(jsonData.email).to.eql(\"postman_test@example.com\");\r\n});"
+                  "pm.test(\"Status code is 201\", function () {\n    pm.response.to.have.status(201);\n});\n\npm.test(\"Response contains correct email\", function () {\n    const jsonData = pm.response.json();\n    pm.expect(jsonData.email).to.include(\"@example.com\");\n});"
                 ]
               }
             }
@@ -28,7 +28,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n  \"email\": \"postman_test@example.com\",\r\n  \"password\": \"testpass123\"\r\n}",
+              "raw": "{\r\n  \"email\": \"signup_test_{{$randomInt}}@example.com\",\r\n  \"password\": \"testpass123\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -96,12 +96,39 @@
       "name": "Products",
       "item": [
         {
-          "name": "orders_quants",
+          "name": "Create Product (Data-Driven)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status matches expected\", function () {\r\n    const expected = parseInt(pm.iterationData.get(\"expected_status\"));\r\n    pm.response.to.have.status(expected);\r\n});"
+                ]
+              }
+            }
+          ],
           "request": {
-            "method": "GET",
+            "method": "POST",
             "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"name\": \"{{name}}\",\r\n  \"description\": \"Data-driven test product\",\r\n  \"price_paise\": {{price_paise}},\r\n  \"stock\": {{stock}}\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
             "url": {
-              "raw": ""
+              "raw": "{{base_url}}/products/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "products",
+                ""
+              ]
             }
           },
           "response": []
@@ -212,7 +239,7 @@
           "response": []
         },
         {
-          "name": "get orders payment status",
+          "name": "Get Order by ID",
           "request": {
             "auth": {
               "type": "bearer",
@@ -224,7 +251,7 @@
                 }
               ]
             },
-            "method": "POST",
+            "method": "GET",
             "header": [],
             "url": {
               "raw": "{{base_url}}/orders/{{order_id}}",
@@ -372,6 +399,15 @@
                   "pm.test(\"Status code is 409\", function () {\r\n    pm.response.to.have.status(409);\r\n});\r\n\r\npm.test(\"Error message mentions order already paid\", function () {\r\n    const jsonData = pm.response.json();\r\n    pm.expect(jsonData.detail).to.include(\"already\");\r\n});"
                 ]
               }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function payUntilSuccess(attemptsLeft, done) {\r\n    if (attemptsLeft <= 0) { done(); return; }\r\n\r\n    const orderId = pm.environment.get(\"order_id\");\r\n    const key = \"setup-\" + Math.random().toString(36).slice(2);\r\n\r\n    pm.sendRequest({\r\n        url: pm.environment.get(\"base_url\") + \"/payments/\",\r\n        method: \"POST\",\r\n        header: {\r\n            \"Content-Type\": \"application/json\",\r\n            \"Authorization\": \"Bearer \" + pm.environment.get(\"access_token\")\r\n        },\r\n        body: {\r\n            mode: \"raw\",\r\n            raw: JSON.stringify({ order_id: parseInt(orderId), idempotency_key: key })\r\n        }\r\n    }, function (err, res) {\r\n        const body = res.json();\r\n        if (body.status === \"success\" || body.detail) {\r\n            done();\r\n        } else {\r\n            payUntilSuccess(attemptsLeft - 1, done);\r\n        }\r\n    });\r\n}\r\n\r\npayUntilSuccess(5, function () {});"
+                ]
+              }
             }
           ],
           "request": {
@@ -459,11 +495,52 @@
         },
         {
           "name": "Login with Wrong Password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 401\", function () {\r\n    pm.response.to.have.status(401);\r\n});\r\npm.test(\"Incorrect email or password\", function () {\r\n    const jsonData = pm.response.json();\r\n    pm.expect(jsonData.detail).to.include(\"Incorrect\");\r\n});"
+                ]
+              }
+            }
+          ],
           "request": {
-            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
             "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "username",
+                  "value": "postman_test3@example.com"
+                },
+                {
+                  "key": "password",
+                  "value": "test647544547"
+                }
+              ]
+            },
             "url": {
-              "raw": ""
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
             }
           },
           "response": []
@@ -777,11 +854,28 @@
     },
     {
       "name": "Health Check",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Response has status ok\", function () {\r\n    const jsonData = pm.response.json();\r\n    pm.expect(jsonData.status).to.eql(\"ok\");\r\n});"
+            ]
+          }
+        }
+      ],
       "request": {
         "method": "GET",
         "header": [],
         "url": {
-          "raw": ""
+          "raw": "{{base_url}}/health",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "health"
+          ]
         }
       },
       "response": []
