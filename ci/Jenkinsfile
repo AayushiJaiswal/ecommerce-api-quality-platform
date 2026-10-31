@@ -10,32 +10,44 @@ pipeline {
 
         stage('Start Database and App') {
             steps {
-                bat 'docker compose -f docker\\docker-compose.yml up -d --build'
+                sh 'docker compose -f docker/docker-compose.yml up -d --build'
             }
         }
 
         stage('Wait for Health Check') {
             steps {
-                bat 'ping -n 10 127.0.0.1 > nul'
+                sh 'sleep 10'
             }
         }
 
         stage('Seed Test Data') {
             steps {
-                bat 'docker exec ecommerce_app python -m scripts.seed_data'
+                sh 'docker exec ecommerce_app python -m scripts.seed_data'
             }
         }
 
         stage('Run Newman Tests') {
             steps {
-                bat 'newman run tests\\postman\\collections\\ecommerce-api-collection.json -e tests\\postman\\environments\\local-dev-environment.json --env-var "base_url=http://127.0.0.1:8001" --folder "Authentication" --folder "Cart" --folder "Orders" --folder "Payments" --folder "Negative & Boundary Tests" --folder "Regression Workflows" --reporters cli,htmlextra --reporter-htmlextra-export reports\\newman-report.html'
+                sh '''
+                newman run tests/postman/collections/ecommerce-api-collection.json \
+                  -e tests/postman/environments/local-dev-environment.json \
+                  --env-var "base_url=http://host.docker.internal:8001" \
+                  --folder "Authentication" \
+                  --folder "Cart" \
+                  --folder "Orders" \
+                  --folder "Payments" \
+                  --folder "Negative & Boundary Tests" \
+                  --folder "Regression Workflows" \
+                  --reporters cli,htmlextra \
+                  --reporter-htmlextra-export reports/newman-report.html
+                '''
             }
         }
     }
 
     post {
         always {
-            bat 'docker compose -f docker\\docker-compose.yml down'
+            sh 'docker compose -f docker/docker-compose.yml down'
         }
     }
 }
