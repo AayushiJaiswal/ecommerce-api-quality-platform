@@ -682,7 +682,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 201\", function () {\r\n    pm.response.to.have.status(201);\r\n});\r\n\r\npm.test(\"Email starts with regression_\", function () {\r\n    const jsonData = pm.response.json();\r\n    pm.expect(jsonData.email).to.include(\"regression_\");\r\n});"
+                  "pm.test(\"Status code is 201\", function () {\r\n    pm.response.to.have.status(201);\r\n});\r\npm.test(\"Email starts with regression_\", function () {\r\n    const jsonData = pm.response.json();\r\n    pm.expect(jsonData.email).to.include(\"regression_\");\r\n});\r\n\r\nconst signupData = pm.response.json();\r\npm.environment.set(\"regression_email\", signupData.email);"
                 ]
               }
             }
@@ -733,7 +733,7 @@
               "urlencoded": [
                 {
                   "key": "username",
-                  "value": "postman_test3@example.com"
+                  "value": "{{regression_email}}"
                 },
                 {
                   "key": "password",
